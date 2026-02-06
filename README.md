@@ -47,3 +47,70 @@ otus4  compressratio         8.28x                  -
 
 #Вывод: алгоритм gzip-9 самый эффективный по сжатию
 
+2. Определение настроек пула
+
+#Скачаем архив в домашнюю директорию, а потом разархивируем его
+wget -O archive.tar.gz --no-check-certificate 'https://downloader.disk.yandex.ru/disk/7aef49f8727c3b2ccf3655961f4f4e8aa488084a8514cb88113b11628
+f78ec6c/6981deef/32RThlEBa5ILS5KnIMNz6D6CDh_ZwzrzvttzG3Z1mYO156m6RSoEZpzw1wyR_JQQ8n-1oPiYlDJ6UXha6myBAA%3D%3D?uid=82055994&filename=zfs_task1.tar.gz&disposi
+tion=attachment&hash=&limit=0&content_type=application%2Fx-gzip&owner_uid=82055994&fsize=7275140&hid=4bbbdf44de8f15e8c068e444377f736f&media_type=compressed&
+tknv=v3&etag=157e13606ae3211a54f6c70e9a62cfd1'
+
+tar -xzvf archive.tar.gz
+ zpoolexport/
+ zpoolexport/filea
+ zpoolexport/fileb
+
+#Проверим, какие пулы доступны для импорта из указанного каталога, состояние данных пула:
+zpool import -d zpoolexport/
+  pool: otus
+     id: 6554193320433390805
+  state: ONLINE
+status: Some supported features are not enabled on the pool.
+        (Note that they may be intentionally disabled if the
+        'compatibility' property is set.)
+ action: The pool can be imported using its name or numeric identifier, though
+        some features will not be available without an explicit 'zpool upgrade'.
+ config:
+
+        otus                         ONLINE
+          mirror-0                   ONLINE
+            /root/zpoolexport/filea  ONLINE
+            /root/zpoolexport/fileb  ONLINE
+
+#импортируем пул и проверим его статус и состав после импорта
+zpool import -d zpoolexport/ otus
+
+zpool status
+  pool: otus
+ state: ONLINE
+status: Some supported and requested features are not enabled on the pool.
+        The pool can still be used, but some features are unavailable.
+action: Enable all features using 'zpool upgrade'. Once this is done,
+        the pool may no longer be accessible by software that does not support
+        the features. See zpool-features(7) for details.
+config:
+
+        NAME                         STATE     READ WRITE CKSUM
+        otus                         ONLINE       0     0     0
+          mirror-0                   ONLINE       0     0     0
+            /root/zpoolexport/filea  ONLINE       0     0     0
+            /root/zpoolexport/fileb  ONLINE       0     0     0
+
+errors: No known data errors
+
+zpool get all otus
+zfs get all otus
+
+#если интересуют конкретные параметры а не весь список, то
+zfs get available otus
+ NAME  PROPERTY   VALUE  SOURCE
+ otus  available  350M   -
+zfs get readonly otus
+ NAME  PROPERTY  VALUE   SOURCE
+ otus  readonly  off     default
+zfs get recordsize otus
+ NAME  PROPERTY    VALUE    SOURCE
+ otus  recordsize  128K     local
+zfs get compression otus
+ NAME  PROPERTY     VALUE     SOURCE
+ otus  compression  zle       local
